@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>bylzzz garage</title>
+<meta name="theme-color" content="#63b1ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="bylzzz">
+<link id="appManifest" rel="manifest">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:    #0a0c0f;
+  --card:  #111418;
+  --card2: #161a1f;
+  --br:    rgba(255,255,255,0.07);
+  --brhi:  rgba(99,177,255,0.35);
+  --t1:    #e8edf2;
+  --t2:    #7a8899;
+  --t3:    #4a5568;
+  --acc:   #63b1ff;
+  --adim:  rgba(99,177,255,0.12);
+  --grn:   #34d399;
+  --org:   #fbbf24;
+  --mono:  'Courier New', Courier, monospace;
+  --sans:  -apple-system, 'Segoe UI', system-ui, sans-serif;
+}
+html,body{
+  min-height:100vh; background:var(--bg); color:var(--t1);
+  font-family:var(--sans); font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+/* BG */
+.bg-canvas{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+.bg-canvas::before{
+  content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);
+  width:700px;height:500px;
+  background:radial-gradient(ellipse at center,rgba(99,177,255,0.08) 0%,transparent 70%);
+  animation:breathe 6s ease-in-out infinite;
+}
+.bg-canvas::after{
+  content:'';position:absolute;bottom:-100px;right:-100px;
+  width:500px;height:500px;
+  background:radial-gradient(ellipse at center,rgba(52,211,153,0.05) 0%,transparent 65%);
+  animation:breathe 8s ease-in-out 2s infinite;
+}
+@keyframes breathe{
+  0%,100%{opacity:0.6;transform:translateX(-50%) scale(1);}
+  50%{opacity:1;transform:translateX(-50%) scale(1.15);}
+}
+.bg-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);
+  background-size:40px 40px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,black 30%,transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,black 30%,transparent 100%);
+}
+.scan-line{
+  position:absolute;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(99,177,255,0.3),transparent);
+  animation:scan 8s linear infinite;opacity:0;
+}
+@keyframes scan{
+  0%{top:-1px;opacity:0;}5%{opacity:1;}95%{opacity:0.5;}100%{top:100vh;opacity:0;}
+}
+.particle{
+  position:absolute;width:2px;height:2px;border-radius:50%;
+  background:var(--acc);opacity:0;animation:floatup linear infinite;
+}
+@keyframes floatup{
+  0%{transform:translateY(0) scale(1);opacity:0;}
+  10%{opacity:0.6;}90%{opacity:0.15;}
+  100%{transform:translateY(-60vh) scale(0);opacity:0;}
+}
+/* LAYOUT */
+.app{position:relative;z-index:1;max-width:540px;margin:0 auto;padding:24px 16px 80px;}
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.brand-name{
+  font-family:var(--mono);font-size:20px;font-weight:700;letter-spacing:-0.5px;
+  color:var(--t1);display:flex;align-items:baseline;gap:6px;
+}
+.brand-name em{font-style:normal;color:var(--acc);}
+.brand-sub{font-size:10px;color:var(--t3);font-family:var(--mono);letter-spacing:0.1em;text-transform:uppercase;margin-top:2px;}
+.ble-badge{
+  display:flex;align-items:center;gap:8px;padding:7px 14px;
+  background:var(--card);border:1px solid var(--br);border-radius:100px;
+  cursor:pointer;transition:border-color 0.2s,background 0.2s;user-select:none;
+}
+.ble-badge:hover{border-color:var(--brhi);background:var(--card2);}
+.ble-badge.connected{border-color:rgba(52,211,153,0.4);}
+.ble-badge.scanning{border-color:rgba(251,191,36,0.4);}
+.ble-icon{position:relative;width:16px;height:16px;display:flex;align-items:center;justify-content:center;}
+.ble-dot{width:8px;height:8px;border-radius:50%;background:var(--t3);transition:background 0.3s;position:relative;z-index:1;}
+.ble-dot.connected{background:var(--grn);box-shadow:0 0 6px rgba(52,211,153,0.7);}
+.ble-dot.scanning{background:var(--org);animation:blink 0.5s infinite;}
+.ble-ring{position:absolute;inset:-4px;border-radius:50%;border:1.5px solid transparent;transition:border-color 0.3s;}
+.ble-dot.connected~.ble-ring{border-color:rgba(52,211,153,0.3);animation:ping 1.5s ease-out infinite;}
+@keyframes ping{0%{transform:scale(1);opacity:1;}100%{transform:scale(2);opacity:0;}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.25;}}
+.ble-text{font-family:var(--mono);font-size:11px;color:var(--t2);}
+.signal-bars{display:flex;align-items:flex-end;gap:2px;height:14px;}
+.signal-bars span{width:3px;border-radius:1px;background:var(--t3);transition:background 0.3s;}
+.signal-bars span:nth-child(1){height:4px;}
+.signal-bars span:nth-child(2){height:7px;}
+.signal-bars span:nth-child(3){height:10px;}
+.signal-bars span:nth-child(4){height:14px;}
+.signal-bars.connected span{background:var(--grn);}
+.signal-bars.connected span:nth-child(4){animation:sigpulse 1.5s ease-in-out infinite;}
+@keyframes sigpulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+/* STATUS */
+.status-card{
+  background:var(--card);border:1px solid var(--br);border-radius:12px;
+  padding:14px 16px;margin-bottom:20px;
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  position:relative;overflow:hidden;
+}
+.status-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--acc),transparent);opacity:0.4;
+}
+.status-field label{
+  display:block;font-size:10px;font-family:var(--mono);letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--t3);margin-bottom:3px;
+}
+.status-value{font-size:13px;font-weight:500;color:var(--t1);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.status-value.dim{color:var(--t3);}
+.status-value.active{color:var(--acc);}
+/* SECTION */
+.section-title{
+  display:flex;align-items:center;gap:10px;margin:20px 0 10px;
+  font-size:10px;font-family:var(--mono);letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--t3);
+}
+.section-title::after{content:'';flex:1;height:1px;background:var(--br);}
+/* GRID */
+.mode-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;}
+.mode-btn{
+  background:var(--card);border:1px solid var(--br);border-radius:10px;
+  padding:10px 11px;display:flex;align-items:center;gap:10px;
+  cursor:pointer;transition:border-color 0.15s,background 0.15s,transform 0.1s;
+  text-align:left;position:relative;overflow:hidden;
+}
+.mode-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(99,177,255,0.04),transparent);
+  opacity:0;transition:opacity 0.2s;
+}
+.mode-btn:hover{border-color:rgba(99,177,255,0.2);background:var(--card2);}
+.mode-btn:hover::before{opacity:1;}
+.mode-btn:active{transform:scale(0.98);}
+.mode-btn.active{
+  border-color:var(--acc);background:rgba(99,177,255,0.08);
+  box-shadow:0 0 0 1px rgba(99,177,255,0.15),inset 0 0 20px rgba(99,177,255,0.05);
+}
+.mode-btn.active::before{opacity:1;}
+.mode-icon{
+  width:34px;height:34px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;background:rgba(255,255,255,0.04);color:var(--t2);
+  transition:background 0.15s,color 0.15s;
+}
+.mode-btn.active .mode-icon{background:rgba(99,177,255,0.15);color:var(--acc);box-shadow:0 0 8px rgba(99,177,255,0.2);}
+.mode-info{overflow:hidden;flex:1;}
+.mode-name{font-size:12.5px;font-weight:500;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mode-btn.active .mode-name{color:var(--acc);}
+.mode-desc{font-size:10.5px;color:var(--t3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono);}
+.mode-num{font-size:10px;font-family:var(--mono);color:var(--t3);flex-shrink:0;align-self:flex-start;margin-top:1px;opacity:0.5;}
+.mode-btn.active .mode-num{color:var(--acc);opacity:0.7;}
+/* SEND */
+.send-wrap{
+  position:sticky;bottom:0;z-index:10;padding:12px 0 0;
+  background:linear-gradient(to top,var(--bg) 60%,transparent);
+}
+.send-btn{
+  width:100%;padding:14px;
+  background:var(--acc);color:#0a0c0f;
+  border:none;border-radius:12px;
+  font-size:14px;font-weight:700;font-family:var(--mono);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:background 0.15s,transform 0.1s,box-shadow 0.15s;
+  letter-spacing:0.03em;box-shadow:0 4px 20px rgba(99,177,255,0.2);
+}
+.send-btn:hover:not(:disabled){background:#88c8ff;box-shadow:0 4px 28px rgba(99,177,255,0.35);transform:translateY(-1px);}
+.send-btn:active:not(:disabled){transform:scale(0.99);}
+.send-btn:disabled{background:var(--card2);color:var(--t3);cursor:not-allowed;box-shadow:none;}
+.send-btn.sending{background:var(--grn);box-shadow:0 4px 20px rgba(52,211,153,0.3);color:#0a0c0f;}
+/* TOAST */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(8px);
+  background:var(--card2);border:1px solid var(--br);color:var(--t1);
+  font-size:12px;font-family:var(--mono);
+  padding:8px 18px;border-radius:100px;
+  opacity:0;transition:opacity 0.2s,transform 0.2s;
+  pointer-events:none;white-space:nowrap;
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:100;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* SEND ICON SVG */
+.btn-icon{display:flex;align-items:center;}
+</style>
+</head>
+<body>
+<div class="bg-canvas">
+  <div class="bg-grid"></div>
+  <div class="scan-line"></div>
+</div>
+
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <div class="brand-name">bylzzz <em>garage</em></div>
+      <div class="brand-sub">BLE Flash Controller · 31 modes</div>
+    </div>
+    <div class="ble-badge" id="bleBadge" onclick="toggleBle()">
+      <div class="ble-icon">
+        <div class="ble-dot" id="bleDot"></div>
+        <div class="ble-ring"></div>
+      </div>
+      <div class="signal-bars" id="signalBars">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <span class="ble-text" id="bleText">Hubungkan</span>
+    </div>
+  </header>
+
+  <div class="status-card">
+    <div class="status-field">
+      <label>Mode aktif</label>
+      <div class="status-value dim" id="activeModeLabel">—</div>
+    </div>
+    <div class="status-field">
+      <label>Perangkat</label>
+      <div class="status-value dim" id="deviceLabel">Tidak terhubung</div>
+    </div>
+  </div>
+
+  <div id="modePanel">
+    <div class="section-title">Mode kedip · 01–11</div>
+    <div class="mode-grid">
+        <div class="mode-btn" id="mode-1" onclick="selectMode(1,'Normal','Kedip 500ms')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12h1m8 -9v1m8 8h1m-15.4 -6.4l.7 .7m12.1 -.7l-.7 .7" /><path d="M9 16a5 5 0 1 1 6 0a3.5 3.5 0 0 0 -1 3a2 2 0 0 1 -4 0a3.5 3.5 0 0 0 -1 -3" /><path d="M9.7 17l4.6 0" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Normal</div>
+            <div class="mode-desc">Kedip 500ms</div>
+          </div>
+          <div class="mode-num">01</div>
+        </div>
+
+        <div class="mode-btn" id="mode-2" onclick="selectMode(2,'Slow','Kedip 800ms')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 15" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Slow</div>
+            <div class="mode-desc">Kedip 800ms</div>
+          </div>
+          <div class="mode-num">02</div>
+        </div>
+
+        <div class="mode-btn" id="mode-3" onclick="selectMode(3,'Fast','Kedip 250ms')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 5v14l8 -7z" /><path d="M14 5v14l8 -7z" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Fast</div>
+            <div class="mode-desc">Kedip 250ms</div>
+          </div>
+          <div class="mode-num">03</div>
+        </div>
+
+        <div class="mode-btn" id="mode-4" onclick="selectMode(4,'Triple','3× kedip + jeda')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Triple</div>
+            <div class="mode-desc">3× kedip + jeda</div>
+          </div>
+          <div class="mode-num">04</div>
+        </div>
+
+        <div class="mode-btn" id="mode-5" onclick="selectMode(5,'Quad','4× kedip + jeda')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><rect x="14" y="14" width="6" height="6" rx="1" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Quad</div>
+            <div class="mode-desc">4× kedip + jeda</div>
+          </div>
+          <div class="mode-num">05</div>
+        </div>
+
+        <div class="mode-btn" id="mode-6" onclick="selectMode(6,'Strobe','Strobe 50ms')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Strobe</div>
+            <div class="mode-desc">Strobe 50ms</div>
+          </div>
+          <div class="mode-num">06</div>
+        </div>
+
+        <div class="mode-btn" id="mode-7" onclick="selectMode(7,'Pulse','Nadi pendek')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12h3l3 -8l3 16l3 -12l2 4h3" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Pulse</div>
+            <div class="mode-desc">Nadi pendek</div>
+          </div>
+          <div class="mode-num">07</div>
+        </div>
+
+        <div class="mode-btn" id="mode-8" onclick="selectMode(8,'Heartbeat','Dub-dub')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.566" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Heartbeat</div>
+            <div class="mode-desc">Dub-dub</div>
+          </div>
+          <div class="mode-num">08</div>
+        </div>
+
+        <div class="mode-btn" id="mode-9" onclick="selectMode(9,'Hazard fast','Hazard cepat')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9v4" /><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" /><path d="M12 16h.01" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Hazard fast</div>
+            <div class="mode-desc">Hazard cepat</div>
+          </div>
+          <div class="mode-num">09</div>
+        </div>
+
+        <div class="mode-btn" id="mode-10" onclick="selectMode(10,'Hazard slow','Hazard lambat')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="12" r="9" /><path d="M12 8v4" /><path d="M12 16h.01" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Hazard slow</div>
+            <div class="mode-desc">Hazard lambat</div>
+          </div>
+          <div class="mode-num">10</div>
+        </div>
+
+        <div class="mode-btn" id="mode-11" onclick="selectMode(11,'Breathing','Fade out + jeda')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12h3v-6h3v12h3v-6h3v6h3v-12h3" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Breathing</div>
+            <div class="mode-desc">Fade out + jeda</div>
+          </div>
+          <div class="mode-num">11</div>
+        </div></div>
+    <div class="section-title">PWM &amp; Efek · 12–21</div>
+    <div class="mode-grid">
+        <div class="mode-btn" id="mode-12" onclick="selectMode(12,'Breath in','Fade in + jeda')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5v14" /><path d="M18 11l-6 -6" /><path d="M6 11l6 -6" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Breath in</div>
+            <div class="mode-desc">Fade in + jeda</div>
+          </div>
+          <div class="mode-num">12</div>
+        </div>
+
+        <div class="mode-btn" id="mode-13" onclick="selectMode(13,'Breath sine','Sinus halus')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12c1.333 -4 2.667 -6 4 -6s2.667 2 4 6s2.667 6 4 6s2.667 -2 4 -6" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Breath sine</div>
+            <div class="mode-desc">Sinus halus</div>
+          </div>
+          <div class="mode-num">13</div>
+        </div>
+
+        <div class="mode-btn" id="mode-14" onclick="selectMode(14,'Candle','Flicker lilin')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12c2 -2.96 0 -7 -1 -8c0 3.038 -1.773 4.741 -3 6c-1.226 1.26 -2 3.24 -2 5a6 6 0 0 0 12 0c0 -1.532 -.5 -3.93 -1.5 -4.5c-.311 1.956 -.785 2.604 -1.5 2.5" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Candle</div>
+            <div class="mode-desc">Flicker lilin</div>
+          </div>
+          <div class="mode-num">14</div>
+        </div>
+
+        <div class="mode-btn" id="mode-15" onclick="selectMode(15,'Lightning','Kilat acak')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Lightning</div>
+            <div class="mode-desc">Kilat acak</div>
+          </div>
+          <div class="mode-num">15</div>
+        </div>
+
+        <div class="mode-btn" id="mode-16" onclick="selectMode(16,'Fade on-off','Triangle wave')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Fade on-off</div>
+            <div class="mode-desc">Triangle wave</div>
+          </div>
+          <div class="mode-num">16</div>
+        </div>
+
+        <div class="mode-btn" id="mode-17" onclick="selectMode(17,'Wig-wag','Terang/redup ganti')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 16h10l-4 -4" /><path d="M17 8h-10l4 4" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Wig-wag</div>
+            <div class="mode-desc">Terang/redup ganti</div>
+          </div>
+          <div class="mode-num">17</div>
+        </div>
+
+        <div class="mode-btn" id="mode-18" onclick="selectMode(18,'SOS','Morse SOS')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 9a3 3 0 0 0 3 3a3 3 0 0 1 3 3" /><path d="M7 9h-3" /><path d="M13 12h2a2 2 0 0 1 0 4h-2v-4z" /><path d="M13 12v-4h1.5a1.5 1.5 0 0 1 0 3" /><path d="M18 9l3 3l-3 3" /><path d="M21 12h-3" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">SOS</div>
+            <div class="mode-desc">Morse SOS</div>
+          </div>
+          <div class="mode-num">18</div>
+        </div>
+
+        <div class="mode-btn" id="mode-19" onclick="selectMode(19,'Police','Siren 3× cepat')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="2" /><path d="M12 14v7" /><path d="M10 12l-7 2.5" /><path d="M14 12l7 2.5" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Police</div>
+            <div class="mode-desc">Siren 3× cepat</div>
+          </div>
+          <div class="mode-num">19</div>
+        </div>
+
+        <div class="mode-btn" id="mode-20" onclick="selectMode(20,'Fade strobe','Strobe + fade amp')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 10a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M6 4v4" /><path d="M6 12v8" /><path d="M10 16a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M12 4v10" /><path d="M12 18v2" /><path d="M16 7a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M18 4v1" /><path d="M18 9v11" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Fade strobe</div>
+            <div class="mode-desc">Strobe + fade amp</div>
+          </div>
+          <div class="mode-num">20</div>
+        </div>
+
+        <div class="mode-btn" id="mode-21" onclick="selectMode(21,'Cascade up','Ramp naik reset')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><polyline points="3 17 9 11 13 15 21 7" /><polyline points="14 7 21 7 21 14" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Cascade up</div>
+            <div class="mode-desc">Ramp naik reset</div>
+          </div>
+          <div class="mode-num">21</div>
+        </div></div>
+    <div class="section-title">Mode lanjutan · 22–31</div>
+    <div class="mode-grid">
+        <div class="mode-btn" id="mode-22" onclick="selectMode(22,'Cascade down','Ramp turun reset')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><polyline points="3 7 9 13 13 9 21 17" /><polyline points="21 10 21 17 14 17" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Cascade down</div>
+            <div class="mode-desc">Ramp turun reset</div>
+          </div>
+          <div class="mode-num">22</div>
+        </div>
+
+        <div class="mode-btn" id="mode-23" onclick="selectMode(23,'Double pulse','2 nadi + jeda')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="8" cy="12" r="4" /><circle cx="16" cy="12" r="4" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Double pulse</div>
+            <div class="mode-desc">2 nadi + jeda</div>
+          </div>
+          <div class="mode-num">23</div>
+        </div>
+
+        <div class="mode-btn" id="mode-24" onclick="selectMode(24,'Bounce','Memantul fisika')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 17c3.333 -3.333 5 -6 5 -8s-1.667 -3 -2.5 -3s-2.5 1.343 -2.5 3c0 1.657 1.343 3 3 3s3.5 -1 6 -5" /><path d="M13 12l6 5" /><path d="M17 12l2.5 -2.5" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Bounce</div>
+            <div class="mode-desc">Memantul fisika</div>
+          </div>
+          <div class="mode-num">24</div>
+        </div>
+
+        <div class="mode-btn" id="mode-25" onclick="selectMode(25,'Sawtooth up','Gergaji naik')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><polyline points="4 19 8 13 12 15 16 10 20 14 20 19 4 19" /><polyline points="4 12 7 8 11 10 15 4 20 8" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Sawtooth up</div>
+            <div class="mode-desc">Gergaji naik</div>
+          </div>
+          <div class="mode-num">25</div>
+        </div>
+
+        <div class="mode-btn" id="mode-26" onclick="selectMode(26,'Sawtooth down','Gergaji turun')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><polyline points="4 19 8 13 12 15 16 10 20 14 20 19 4 19" /><polyline points="4 12 7 8 11 10 15 4 20 8" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Sawtooth down</div>
+            <div class="mode-desc">Gergaji turun</div>
+          </div>
+          <div class="mode-num">26</div>
+        </div>
+
+        <div class="mode-btn" id="mode-27" onclick="selectMode(27,'Twinkle','Bintang acak')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Twinkle</div>
+            <div class="mode-desc">Bintang acak</div>
+          </div>
+          <div class="mode-num">27</div>
+        </div>
+
+        <div class="mode-btn" id="mode-28" onclick="selectMode(28,'Morse HELP','Sinyal HELP')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="12" r="9" /><path d="M12 17v.01" /><path d="M12 13.5a1.5 1.5 0 0 1 1 -1.5a2.6 2.6 0 1 0 -3 -4" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Morse HELP</div>
+            <div class="mode-desc">Sinyal HELP</div>
+          </div>
+          <div class="mode-num">28</div>
+        </div>
+
+        <div class="mode-btn" id="mode-29" onclick="selectMode(29,'Zen','Sangat lambat')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 8h8l-8 8h8" /><path d="M14 4h6l-6 8h6" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Zen</div>
+            <div class="mode-desc">Sangat lambat</div>
+          </div>
+          <div class="mode-num">29</div>
+        </div>
+
+        <div class="mode-btn" id="mode-30" onclick="selectMode(30,'Random burst','Acak total')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h.01" /><path d="M15 9h.01" /><path d="M9 15h.01" /><path d="M15 15h.01" /><path d="M12 12h.01" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Random burst</div>
+            <div class="mode-desc">Acak total</div>
+          </div>
+          <div class="mode-num">30</div>
+        </div>
+
+        <div class="mode-btn" id="mode-31" onclick="selectMode(31,'Campfire','Api unggun')">
+          <div class="mode-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 21l4 -4" /><path d="M16 17l4 4" /><path d="M12 21v-7" /><path d="M8 13c0 -2.761 1.343 -5 4 -5c2.657 0 4 2.239 4 5" /><path d="M10 6c0 -1.333 .667 -2.333 2 -3c-.667 2 0 3 1 3.5c.333 -1 1 -1.833 2 -2.5c0 2.5 -1 4 -3 4s-2 -2 -2 -2z" /></svg></div>
+          <div class="mode-info">
+            <div class="mode-name">Campfire</div>
+            <div class="mode-desc">Api unggun</div>
+          </div>
+          <div class="mode-num">31</div>
+        </div></div>
+  </div>
+
+  <div class="send-wrap">
+    <button class="send-btn" id="sendBtn" disabled onclick="sendMode()">
+      <span class="btn-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11"/></svg>
+      </span>
+      <span id="sendLabel">Pilih mode dulu</span>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SERVICE_UUID        = "12345678-1234-1234-1234-123456789abc";
+const CHARACTERISTIC_UUID = "abcd1234-5678-90ab-cdef-123456789abc";
+let selectedId=null, selectedName=null;
+let bleDevice=null, bleChar=null, connected=false;
+
+// Particles
+(function(){
+  const c=document.querySelector('.bg-canvas');
+  for(let i=0;i<18;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    p.style.cssText=`left:${Math.random()*100}%;bottom:${Math.random()*20}%;animation-duration:${8+Math.random()*12}s;animation-delay:${Math.random()*10}s;width:${1+Math.random()*2}px;height:${1+Math.random()*2}px;`;
+    c.appendChild(p);
+  }
+})();
+
+// Manifest inject (works as blob URL for PWA install)
+(function(){
+  const manifest = {"name": "bylzzz garage", "short_name": "bylzzz", "description": "BLE Flash Controller \u00b7 31 modes", "start_url": "./", "display": "standalone", "orientation": "portrait", "background_color": "#0a0c0f", "theme_color": "#63b1ff", "icons": [{"src": "data:image/png;base64,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", "sizes": "192x192", "type": "image/png"}, {"src": "data:image/png;base64,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", "sizes": "512x512", "type": "image/png"}]};
+  const blob = new Blob([JSON.stringify(manifest)],{type:'application/json'});
+  document.getElementById('appManifest').href = URL.createObjectURL(blob);
+})();
+
+// SW via blob
+(function(){
+  if(!('serviceWorker' in navigator)) return;
+  const sw = atob("CmNvbnN0IENBQ0hFPSdieWx6enotdjEnOwpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoJ2luc3RhbGwnLGU9PntzZWxmLnNraXBXYWl0aW5nKCk7fSk7CnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignYWN0aXZhdGUnLGU9PnsKICBlLndhaXRVbnRpbChjYWNoZXMua2V5cygpLnRoZW4oa3M9PlByb21pc2UuYWxsKGtzLmZpbHRlcihrPT5rIT09Q0FDSEUpLm1hcChrPT5jYWNoZXMuZGVsZXRlKGspKSkpKTsKfSk7CnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignZmV0Y2gnLGU9PnsKICBlLnJlc3BvbmRXaXRoKGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGM9PmMubWF0Y2goZS5yZXF1ZXN0KS50aGVuKHI9PnsKICAgIGlmKHIpIHJldHVybiByOwogICAgcmV0dXJuIGZldGNoKGUucmVxdWVzdCkudGhlbihyZXM9PntjLnB1dChlLnJlcXVlc3QscmVzLmNsb25lKCkpO3JldHVybiByZXM7fSk7CiAgfSkpKTsKfSk7Cg==");
+  const blob = new Blob([sw],{type:'text/javascript'});
+  const url  = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url).catch(()=>{});
+})();
+
+// App icon for apple
+(function(){
+  const link = document.createElement('link');
+  link.rel='apple-touch-icon';
+  link.href='data:image/png;base64,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';
+  document.head.appendChild(link);
+})();
+
+function selectMode(id, name, desc){
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mode-'+id).classList.add('active');
+  selectedId=id; selectedName=name;
+  const btn=document.getElementById('sendBtn');
+  btn.disabled=false;
+  document.getElementById('sendLabel').textContent=`SEND MODE_${String(id).padStart(2,'0')} · ${name.toUpperCase()}`;
+}
+
+function setConnected(val){
+  connected=val;
+  const dot=document.getElementById('bleDot');
+  const txt=document.getElementById('bleText');
+  const badge=document.getElementById('bleBadge');
+  const bars=document.getElementById('signalBars');
+  if(val){
+    dot.className='ble-dot connected'; txt.textContent='Terhubung';
+    badge.className='ble-badge connected'; bars.className='signal-bars connected';
+    document.getElementById('deviceLabel').classList.remove('dim');
+  } else {
+    dot.className='ble-dot'; txt.textContent='Hubungkan';
+    badge.className='ble-badge'; bars.className='signal-bars';
+    document.getElementById('deviceLabel').textContent='Tidak terhubung';
+    document.getElementById('deviceLabel').classList.add('dim');
+  }
+}
+
+async function toggleBle(){
+  if(connected){ disconnectBle(); return; }
+  const dot=document.getElementById('bleDot');
+  const txt=document.getElementById('bleText');
+  const badge=document.getElementById('bleBadge');
+  dot.className='ble-dot scanning'; txt.textContent='Mencari...'; badge.className='ble-badge scanning';
+  try{
+    bleDevice=await navigator.bluetooth.requestDevice({
+      filters:[{name:'Flasher_BLE'}],
+      optionalServices:[SERVICE_UUID]
+    });
+    bleDevice.addEventListener('gattserverdisconnected',onDisconnected);
+    const server=await bleDevice.gatt.connect();
+    const service=await server.getPrimaryService(SERVICE_UUID);
+    bleChar=await service.getCharacteristic(CHARACTERISTIC_UUID);
+    setConnected(true);
+    document.getElementById('deviceLabel').textContent=bleDevice.name||'Flasher_BLE';
+    showToast('✓ Terhubung ke '+(bleDevice.name||'Flasher_BLE'));
+  }catch(e){
+    dot.className='ble-dot'; txt.textContent='Hubungkan'; badge.className='ble-badge';
+    if(e.name!=='NotFoundError') showToast('✕ '+e.message);
+  }
+}
+
+function onDisconnected(){
+  bleChar=null; setConnected(false);
+  document.getElementById('activeModeLabel').textContent='—';
+  document.getElementById('activeModeLabel').className='status-value dim';
+  showToast('Koneksi terputus');
+}
+
+function disconnectBle(){
+  if(bleDevice&&bleDevice.gatt.connected) bleDevice.gatt.disconnect();
+}
+
+async function sendMode(){
+  if(!selectedId) return;
+  if(!connected||!bleChar){ showToast('Hubungkan BLE dulu'); return; }
+  const cmd='MODE_'+selectedId;
+  const btn=document.getElementById('sendBtn');
+  btn.classList.add('sending'); btn.disabled=true;
+  document.getElementById('sendLabel').textContent='Mengirim...';
+  try{
+    await bleChar.writeValue(new TextEncoder().encode(cmd));
+    const lbl=document.getElementById('activeModeLabel');
+    lbl.textContent=`${selectedName.toUpperCase()} · ${cmd}`;
+    lbl.className='status-value active';
+    showToast('✓ Terkirim: '+cmd);
+  }catch(e){
+    showToast('✕ Gagal: '+e.message);
+  }
+  setTimeout(()=>{
+    btn.classList.remove('sending'); btn.disabled=false;
+    document.getElementById('sendLabel').textContent=`SEND MODE_${String(selectedId).padStart(2,'0')} · ${selectedName.toUpperCase()}`;
+  },600);
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
